@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ConnectView">
+        <attr name="strokeWith"  format="dimension"/>
+        <attr name="lineHeight" format="dimension" />
+        <attr name="bigCirRatio" format="float" />
+        <attr name="scaleRatio" format="float" />
+        <attr name="scaleSpeed" format="float" />
+        <attr name="smallCirRatio" format="float" />
+        <attr name="smallAngle" format="float" />
+        <attr name="outCircleAlpha" format="integer" />
+        <attr name="color" format="color" />
+        <attr name="textSize" format="dimension" />
+        <attr name="text" format="string" />
+        <attr name="outCircleSpeed" format="dimension" />
+        <attr name="outCircleAlphaSpeed" format="dimension" />
+    </declare-styleable>
+    <declare-styleable name="TickView">
+        <attr name="tickColor" format="color" />
+        <attr name="duration" format="integer" />
+        <attr name="tickStrokeWith"  format="dimension"/>
+        <attr name="tickCirRatio" format="float" />
+    </declare-styleable>
+    <declare-styleable name="CircleProgressbar" >
+        <attr name="barStrokeWidth" format="dimension" />
+        <attr name="barColor" format="color" />
+        <attr name="barBigRatio" format="float" />
+        <attr name="barSmallRatio" format="float" />
+    </declare-styleable>
+</resources>
