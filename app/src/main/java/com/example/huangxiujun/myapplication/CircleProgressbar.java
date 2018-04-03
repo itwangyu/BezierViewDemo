@@ -16,6 +16,7 @@ import android.view.View;
  * @author Wangyu
  */
 public class CircleProgressbar extends View {
+    private static final String TAG = "wangyu";
     private Context context;
     private float barStrokeWidth = 10;
     private int barColor = Color.WHITE;
@@ -27,9 +28,10 @@ public class CircleProgressbar extends View {
     private float mSmallRatio = 0.5f;
     private TypedArray mTypedArray;
 
-    private Control bigControl = new Control(0);
-    private Control smallControl = new Control(100);
+    private Control bigControl =null;
     private Paint mPaintBar;
+    private RoundCompleteListener mRoundCompleteListener;
+    private boolean mIsWorking=false;
 
 
     public CircleProgressbar(Context context) {
@@ -51,7 +53,6 @@ public class CircleProgressbar extends View {
             mSmallRatio = mTypedArray.getFloat(R.styleable.CircleProgressbar_barSmallRatio, mSmallRatio);
             mBigRatio = mTypedArray.getFloat(R.styleable.CircleProgressbar_barBigRatio, mBigRatio);
         }
-        smallControl.setFastShortRunCircle(540);
         mPaintCircle = new Paint();
         mPaintCircle.setAntiAlias(true);
         mPaintCircle.setColor(barColor);
@@ -75,31 +76,44 @@ public class CircleProgressbar extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        _draw(canvas);
+        if (bigControl!=null) {
+            drawBigCircle(canvas, width * mBigRatio/2 , bigControl);
+            bigControl.updateUiByStatus();
+        }
+        if (mIsWorking) {
+            postInvalidate();
+        }
+    }
+
+    public void start() {
+        bigControl= new Control(-90);
+        mIsWorking=true;
         postInvalidate();
     }
 
-    private void _draw(Canvas canvas) {
-        drawBigCircle(canvas, width * mBigRatio/2 , bigControl);
-//        drawBigCircle(canvas, width * mBigRatio *mSmallRatio/2, smallControl);
-
-        getCurrentStartAngle();
+    public void stop() {
+        mIsWorking=false;
     }
 
-    private void getCurrentStartAngle() {
-        bigControl.updateStatus();
-        smallControl.updateStatus();
+
+    public interface RoundCompleteListener {
+        void onRoundComplete();
+    }
+
+    public void setOnRoundCompleteListener(RoundCompleteListener listener) {
+        this.mRoundCompleteListener=listener;
     }
 
     /**
      * 控制
      */
     class Control {
+        private final float VALUE_DEFAULT_STEP=2;
         //起点弧度
         private double startAngle = 0;
         //默认的弧长
-        private int sweepAngleOrignal = -10;
-        private int sweepAngle = sweepAngleOrignal;
+        private int sweepAngleOrignal = 360;
+        private double sweepAngle = sweepAngleOrignal;
 
 
         //第一阶段参数
@@ -107,19 +121,17 @@ public class CircleProgressbar extends View {
         private int fastRunAngle = 360;
 
         //第二阶段参数
-        private int growStep = 2;
-        private double growLength = 270;
+        private float growStep = VALUE_DEFAULT_STEP;
+        private double growLength = 360;
 
         //缩小参数
-        private int smallStep = 2;
+        private float smallStep = VALUE_DEFAULT_STEP;
         private double smallLength = sweepAngleOrignal;
 
-        private int status = 1;
+        private float slowStep=0.1f;
         private int totalAngle = 0;
-
-        public void setFastShortRunCircle(int circleAngle) {
-            fastRunAngle = circleAngle;
-        }
+        private final int VALUE_STATE_SMALL_FAST=0,VALUE_STATE_GROW_UP=1, VALUE_STATE_LONG_FAST =2,VALUE_STATE_REDUCE_DOWN=3;
+        private int mStatus = VALUE_STATE_REDUCE_DOWN;
 
         /**
          * 获取开始弧度位置
@@ -130,12 +142,16 @@ public class CircleProgressbar extends View {
             return startAngle;
         }
 
+        private void changeState(int status) {
+            mStatus=status;
+        }
+
         /**
          * 获取弧度长度
          *
          * @return
          */
-        public int getSweepAngle() {
+        public double getSweepAngle() {
             return sweepAngle;
         }
 
@@ -144,7 +160,7 @@ public class CircleProgressbar extends View {
         }
 
         /**
-         * status == 0 进入
+         * mStatus == 0 进入
          * 短快速转动一圈
          */
         private void firstStage() {
@@ -156,30 +172,29 @@ public class CircleProgressbar extends View {
                 totalAngle += fastStep;
             } else {
                 totalAngle = 0;
-                status = 1;
+                changeState(VALUE_STATE_GROW_UP);
             }
         }
 
         /**
-         * status == 1 进入
+         * mStatus == 1 进入
          */
         private void toGrowUp() {
-//            Log.i("wangyu", "toGrowUp: "+startAngle);
-            if (startAngle > 360) {
-                startAngle -= 360;
-            }
+//            if (startAngle > 360) {
+//                startAngle -= 360;
+//            }
             if (-sweepAngle < growLength) {
                 startAngle += growStep;
-                sweepAngle -= growStep * 0.67;
+                sweepAngle -= growStep-slowStep;
             } else {
                 totalAngle = 0;
-                status = 2;
+                changeState(VALUE_STATE_REDUCE_DOWN);
             }
 
         }
 
         /**
-         * status == 2 进入
+         * mStatus == 2 进入
          * 长的 很快转动 转2圈
          */
         private void keepLongFast() {
@@ -191,24 +206,27 @@ public class CircleProgressbar extends View {
                 totalAngle += fastStep;
             } else {
                 totalAngle = 0;
-                status = 3;
+                changeState(VALUE_STATE_REDUCE_DOWN);
             }
         }
 
         /**
-         * status == 3 进入
+         * mStatus == 3 进入
          * 缩小
          */
         private void toSmall() {
-            if (startAngle > 360) {
-                startAngle -= 360;
-            }
-            if (-sweepAngle > smallLength) {
-                startAngle += smallStep;
+//            if (startAngle > 360) {
+//                startAngle -= 360;
+//            }
+            if (-sweepAngle > -smallLength) {
+                startAngle += slowStep;
                 sweepAngle += smallStep;
             } else {
                 totalAngle = 0;
-                status = 0;
+                if (mRoundCompleteListener != null) {
+                    mRoundCompleteListener.onRoundComplete();
+                }
+                changeState(VALUE_STATE_GROW_UP);
             }
         }
 
@@ -217,20 +235,21 @@ public class CircleProgressbar extends View {
          *
          * @return
          */
-        private double updateStatus() {
-            if (status == 0) {
+        private double updateUiByStatus() {
+            if (mStatus == VALUE_STATE_SMALL_FAST) {
                 //短小 快速转动
                 firstStage();
-            } else if (status == 1) {
+            } else if (mStatus == VALUE_STATE_GROW_UP) {
                 //基本保持尾部不动增长
                 toGrowUp();
-            } else if (status == 2) {
+            } else if (mStatus == VALUE_STATE_LONG_FAST) {
                 keepLongFast();
-            } else if (status == 3) {
+            } else if (mStatus == VALUE_STATE_REDUCE_DOWN) {
                 toSmall();
             }
             return startAngle;
         }
+
     }
 
 
@@ -260,7 +279,7 @@ public class CircleProgressbar extends View {
 
 
         // 弧形ProgressBar。
-        canvas.drawArc(rectBg, (float) control.getStartAngle(), control.getSweepAngle(), false, mPaintBar);
+        canvas.drawArc(rectBg, (float) control.getStartAngle(), (float) control.getSweepAngle(), false, mPaintBar);
 
 
         //画起始的小圆
