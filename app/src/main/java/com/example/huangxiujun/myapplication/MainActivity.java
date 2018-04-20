@@ -1,9 +1,12 @@
 package com.example.huangxiujun.myapplication;
 
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -19,25 +22,29 @@ public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private List<String> dataList;
+    public static String API_DOMAIN = "http://api.zb.com";
+    private RelativeLayout rl;
+    private FloatingActionButton fb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         TransparentView headView = findViewById(R.id.head_view);
-        RelativeLayout rl = findViewById(R.id.rl);
+        rl = findViewById(R.id.rl);
         headView.setDispatchView(rl);
         Button bt = findViewById(R.id.bt);
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Toast.makeText(MainActivity.this, "smell.....", Toast.LENGTH_LONG).show();
+                fb.show();
             }
         });
         recyclerView = findViewById(R.id.recyclerView);
 
         dataList = new ArrayList<>();
-        for (int i=0;i<10;i++) {
+        for (int i=0;i<30;i++) {
             dataList.add("dkakflfafa" + i);
         }
 
@@ -49,7 +56,32 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setHasFixedSize(true);
         recyclerView.setNestedScrollingEnabled(false);
         recyclerView.setAdapter(new MyAdapter());
+
+        NestedScrollView scrollView = findViewById(R.id.scrollView);
+        scrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
+
+            @Override
+            public void onScrollChange(NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                Log.i("wangyu", scrollY + "  " + oldScrollY+"  ");
+                float alpha=scrollY/900f;
+                rl.setAlpha(1-alpha);
+                if (scrollY > oldScrollY) {
+                    fb.hide();
+                } else {
+                    fb.show();
+                }
+            }
+        });
+        fb = findViewById(R.id.fb);
+        fb.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getApplicationContext(),"点击了",Toast.LENGTH_SHORT).show();
+            }
+        });
     }
+
+
 
     class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
 

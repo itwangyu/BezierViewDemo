@@ -3,4 +3,7 @@
     <string name="connecting">connecting</string>
     <string name="disconnected">disconnected</string>
     <string name="connected">connected</string>
+
+    <string name="description">对应管理器中的描述</string>
+    <string name="name">对应管理器中的名称</string>
 </resources>
